@@ -140,3 +140,4 @@ extract_table <- function(lines, table_def) {
     stringr::str_subset(pattern = table_def$skip_pattern, negate = TRUE)
 }
 
+# trivial change to force commit
