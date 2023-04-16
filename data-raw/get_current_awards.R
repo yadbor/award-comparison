@@ -5,6 +5,15 @@ library(dplyr)
 # Set to TRUE for messages
 verbose = TRUE
 
+# Keep the awards here
+award_folder <- here::here("data-raw", "awards")
+if (!dir.exists(award_folder)) { 
+  if (verbose) {
+    cat("creating 'awards' folder.\n")
+  }
+  dir.create(award_folder)
+}
+
 # Extract the names of the files for the current Award in each State
 # and download them for later analysis.
 
@@ -51,66 +60,10 @@ doc_from_index <- function(url, pattern = "", order = "fwd",
 # - either the last if in 'fwd' order, or the first if in 'rev' order.
 # If the file is a scanned PDF need OCR to extract text, so note file type.
 #
-# Probably move this out to an external file when the code is stable.
-sources <- tibble::tribble(
-  ~state, ~url, ~type, ~pattern, ~order, ~doc_type, ~notes,
-  
-  "ACT",
-  "https://www.canberrahealthservices.act.gov.au/careers/enterprise-agreeements",
-  "IDX",
-  "Health.*Professional.*Enterprise.*Agreement",
-  "fwd",
-  "pdf",
-  "text PDF",
-  
-  "QLD", 
-  "https://www.health.qld.gov.au/hrpolicies/salary/health-practitioners", 
-  "WEB", 
-  "",
-  "",
-  "html",
-  "salaries are in web page",
-  
-  "NSW", 
-  "https://www.health.nsw.gov.au/careers/conditions/Pages/b.aspx",
-  "IDX",
-  "profmed",
-  "fwd",
-  "pdf",
-  "text PDF",
-  
-  "SA",
-  "https://www.agd.sa.gov.au/industrial-relations/current-agreements",
-  "IDX",
-  "Public.*Sector.*Salaried",
-  "fwd",
-  "pdf", 
-  "scanned PDF",
-  
-  "TAS",
-  "https://www.tic.tas.gov.au/public_sector_agreements",
-  "IDX",
-  "Allied.*Health.*Professionals",
-  "rev",
-  "pdf", 
-  "scanned PDF",
-  
-  "VIC",
-  "https://www.westernhealth.org.au/Careers/Pages/Salary-Rate.aspx",
-  "IDX",
-  "Biomed",
-  "fwd",
-  "pdf",
-  "text PDF",
-  
-  "WA",
-  "https://www.health.wa.gov.au/articles/a_e/awards-and-agreements",
-  "IDX",
-  "Salaried",
-  "fwd",
-  "pdf",
-  "text PDF"
-)
+sources <- readr::read_csv(here::here("data", "sources.csv"))
+
+sources <- sources %>% 
+  mutate(award_file = award_file(state, doc_type, award_folder))
 
 if (verbose) {
   cat("Fetching the URLs of the most recent award files...\n")
@@ -131,31 +84,24 @@ if (verbose) {
   cat("done.\n")
 }
 
+award_file <- function(state, doc_type, dest_dir) {
+  here::here(dest_dir, paste(toupper(state), tolower(doc_type), sep = "."))
+}
+
 # Save an Award file for later processing.
 download_award <- function(doc_url, state, doc_type, ..., dest_dir) {
-  dest_file <- paste(toupper(state), tolower(doc_type), sep = ".")
-  dest <- here::here(dest_dir, dest_file)
-
+  dest <- award_file(state, doc_type, dest_dir)
   if (verbose) {
     cat(doc_url, "\nto\t", dest, "\n")
   }
-  download.file(url = doc_url,
-                destfile = dest,
-                mode = "wb")
+  download.file(url = doc_url, destfile = dest, mode = "wb")
 }
 
 # Wrap with safely() to allow pwalk to continue even if the download fails
 
 download_safely <- safely(download_award)
 
-# Keep the awards here
-award_folder <- here::here("data-raw", "awards")
-if (!dir.exists(award_folder)) { 
-  if (verbose) {
-    cat("creating 'awards' folder.\n")
-  }
-  dir.create(award_folder)
-}
+
 
 if (verbose) {
   cat("Downloading award files...\n\n")
