@@ -101,12 +101,11 @@ sources <- sources %>%
   mutate(award_file = award_file(state, doc_type, award_folder))
 
 # Save an Award file for later processing.
-download_award <- function(doc_url, state, doc_type, ..., dest_dir) {
-  dest <- award_file(state, doc_type, dest_dir)
+download_award <- function(doc_url, state, award_file, ...) {
   if (verbose) {
-    cat(doc_url, "\nto\t", dest, "\n")
+    cat(state, "\n", doc_url, "\nto\t", award_file, "\n")
   }
-  download.file(url = doc_url, destfile = dest, mode = "wb")
+  download.file(url = doc_url, destfile = award_file, mode = "wb")
 }
 
 # Wrap with safely() to allow pwalk to continue even if the download fails
