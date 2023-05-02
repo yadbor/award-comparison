@@ -38,7 +38,12 @@ doc_from_index <- function(url, pattern = "", order = "fwd",
     stop("order must be 'fwd' or 'rev'")
   }
   # str_subset chokes on "", despite what documentation says
-  pattern <- ifelse(pattern == "", NA_character_, pattern) 
+  # and also on non-character NA, so fix both here
+  if(pattern == "" | is.na(pattern)) {
+    pattern <- NA_character_
+  }
+
+  cat("dir ", order, " pat ", pattern, " from ", url, "\n")
   
   doc_list <- httr::GET(url, config = config_proxy) %>%
     rvest::read_html() %>% 
@@ -47,10 +52,16 @@ doc_from_index <- function(url, pattern = "", order = "fwd",
     stringr::str_subset(pattern = pattern) %>%
     rvest::url_absolute(base = url)
   
-  return(ifelse(order == "fwd", 
-                dplyr::last(doc_list), 
-                dplyr::first(doc_list))
-  )
+  doc_url <- ifelse(order == "fwd", 
+                      dplyr::last(doc_list), 
+                      dplyr::first(doc_list)
+                    )
+  cat(order, "\n", 
+      doc_url, "\n\t",
+        dplyr::last(doc_list), "\n\t", 
+        dplyr::first(doc_list), "\n\n")
+  
+  return(doc_url)
 }
 
 # Where does each State keep their Award/Salary table?
@@ -60,7 +71,8 @@ doc_from_index <- function(url, pattern = "", order = "fwd",
 # - either the last if in 'fwd' order, or the first if in 'rev' order.
 # If the file is a scanned PDF need OCR to extract text, so note file type.
 #
-sources <- readr::read_csv(here::here("data", "sources.csv"))
+sources <- readr::read_csv(here::here("data", "sources.csv"), 
+                           show_col_types = FALSE)
 
 sources <- sources %>% 
   mutate(award_file = award_file(state, doc_type, award_folder))
@@ -73,11 +85,7 @@ if (verbose) {
 sources <- sources %>% 
   rowwise() %>% # need this as httr::GET in doc_from_index is not vectorised
   mutate(
-    doc_url = if_else(
-      type == "IDX", 
-      doc_from_index(url, pattern), 
-      url
-    )
+    doc_url = if_else(type == "IDX", doc_from_index(url, pattern, order), url)
   )
 
 if (verbose) {
@@ -87,6 +95,10 @@ if (verbose) {
 award_file <- function(state, doc_type, dest_dir) {
   here::here(dest_dir, paste(toupper(state), tolower(doc_type), sep = "."))
 }
+
+# Add the download path to sources
+sources <- sources %>%
+  mutate(award_file = award_file(state, doc_type, award_folder))
 
 # Save an Award file for later processing.
 download_award <- function(doc_url, state, doc_type, ..., dest_dir) {
@@ -98,16 +110,14 @@ download_award <- function(doc_url, state, doc_type, ..., dest_dir) {
 }
 
 # Wrap with safely() to allow pwalk to continue even if the download fails
-
-download_safely <- safely(download_award)
-
+download_safely <- purrr::safely(download_award)
 
 
 if (verbose) {
   cat("Downloading award files...\n\n")
 }
 # Apply to all rows in sources
-pwalk(sources, download_safely, dest_dir=award_folder)
+purrr::pwalk(sources, download_safely, dest_dir=award_folder)
 
 if (verbose) {
   cat("done.\n")
