@@ -1,0 +1,37 @@
+---
+title: "Award Comparison"
+author: "Robert Day"
+format: html
+---
+
+## Summary
+
+Add a summary of the findings here - one page is best.
+Include results from lower in the anakysis using `brew` if needed.
+
+## Purpose
+
+## Methodology
+
+The most recent available awards from each State were sourced from the relevant
+web pages.
+Most States have their own level structures, so these need to be matched to the
+WA structure (or some generic level structure) for comparison.
+
+When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+
+## Outline
+1. acquire award documents
+    1. from a table of web sites, find the most recent award document
+    2. download that to `data-raw\awards`
+3. extract the approximate salary tables from each award 
+(manually for scanned documents) into `data-raw\tables`
+5. clean up the salary tables and save to `data`
+6. do the analysis
+
+```{r}
+#| echo: false
+2 * 2
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).

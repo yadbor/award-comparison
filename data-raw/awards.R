@@ -1,31 +1,199 @@
 ## code to prepare `awards` dataset goes here
 
-usethis::use_data(awards, overwrite = TRUE)
+library(dplyr)
+library(stringr)
 
-sources <- readr::read_csv(here::here("data", "sources.csv"))
+##usethis::use_data(awards, overwrite = TRUE)
+
+source(here::here("scripts", "folder_locations.R"))
+
+# Read the list of source info and the names of the downloaded files.
+# Should check for error if this is missing, but the job will fail anyway.
+sources <- readr::read_csv(here::here("data", "sources_and_file.csv"), 
+                           show_col_types = FALSE)
+
+# Having downloaded the relevant current Award files, extract the salary tables.
+# First extract each Award to a separate files, then combine them
+# into one data frame.
 
 
-get_from_html <- function(filename, order) {
+# For the two scanned/OCR files the tables are manually copied into .xlsx files
+# as they need a lot of clean-up.
+
+# If the data are already in a .html file, then extract the relevant table.
+
+# If the data are in a PDF file use some info about the structure of the tables
+# to extract the salary information.
+
+
+table_from_html <- function(filename, order) {
+  
+  tables <- rvest::read_html(filename) %>% rvest::html_table()
+    
   if (order == "fwd") {
-    rvest::read_html(filename) %>% 
-      html_table() %>%
-      dplyr::last()
+      dplyr::last(tables)
   } else if (order == "rev") {
-    rvest::read_html(filename) %>% 
-      html_table() %>%
-      dplyr::first()
+      dplyr::first(tables)
   } else {
     simpleError("order must be either 'fwd' or 'rev'")
   }
 }
 
-table_structures <- tibble::tribble(
-  ~state, ~pattern, ~skip,
-  "QLD", "", 0,
-  "WA", "SALARIES – PROFESSIONAL DIVISION", 3,
-  "ACT", "Health Professional Level 1", 0,
-  "NSW", "Biomedcial Engineer", 0
+table_rows_from_text_1 <- function(raw_text, tbl_layout, skip_blank_rows = TRUE) {
+  # For potentially multi-page tables need to combine the pages first
+  raw_lines <- raw_text %>% stringr::str_split("\n") %>% unlist()
+  # find the lines containing the table of interest
+  # Choose the last found in case it's also a heading in the table of contents
+  table_start <- raw_lines %>% 
+    stringr::str_which(tbl_layout$start_pattern) %>% 
+    tail(1) + tbl_layout$start_offset
+  table_end <- raw_lines %>% 
+    stringr::str_which(tbl_layout$end_pattern) %>% 
+    tail(1) + tbl_layout$end_offset
+  # Just get the table part, skipping any footers etc. defined by skip_pattern
+  table_lines <- raw_lines[seq(table_start, table_end)] %>% 
+    stringr::str_subset(pattern = tbl_layout$skip_pattern, negate = TRUE)
+  if (skip_blank_rows) {
+    table_lines <- table_lines %>% 
+      str_trim() %>% 
+      str_subset("^\\s*$", negate = TRUE)
+  }
+  return(table_lines)
+}
+
+table_rows_from_text <- function(raw_text, award_def, skip_blank_rows = TRUE) {
+  
+  # Split into lines, combining pages to allow for multi-page tables
+  raw_lines <- raw_text %>% stringr::str_split("\n") %>% unlist()
+  
+  # Find the lines containing the table of interest, defined by patterns
+  # Choose the last found in case it's also a heading in the table of contents
+  # If no pattern is given use the first or last row as appropriate
+  if (award_def$start_pattern == "") {
+    table_start <- 1 # the first line
+  } else {
+    table_start <- raw_lines %>% 
+      stringr::str_which(award_def$start_pattern) %>% 
+      tail(1)
+  }
+  table_start <- table_start + award_def$start_offset
+  if (award_def$end_pattern == "") {
+    table_end <- length(raw_lines) # the last line
+  } else {
+    table_end <- raw_lines %>% 
+    stringr::str_which(award_def$end_pattern) %>% 
+    tail(1)
+  } 
+  table_end <- table_end + award_def$end_offset
+  
+  # Just the table part
+  table_lines <- raw_lines[seq(table_start, table_end)] 
+  
+  # Skip any footers etc. defined by skip_pattern
+  if(award_def$skip_pattern != "") {
+    table_lines <- stringr::str_subset(table_lines, 
+                                       pattern = award_def$skip_pattern, 
+                                       negate = TRUE)
+  }
+  
+  # Optionally remove any empty rows
+  if (skip_blank_rows) {
+    table_lines <- table_lines %>% 
+      str_subset("^\\s*$", negate = TRUE)
+  }
+  return(table_lines)
+}
+
+save_raw_table <- function(raw_table, s) {
+  #readr::write_csv(raw_table, here::here(raw_table_folder, paste0(s, ".csv")))
+  cat(here::here(raw_table_folder, paste0(s, ".csv")))
+}
+
+
+table_layout <- tibble::tribble(
+  ~state, 
+  ~start_pattern, ~start_offset, ~end_pattern, ~end_offset, ~skip_pattern,
+  
+  "QLD", # Source is html so table is already properly defined
+  "", 0, 
+  "", 0, 
+  "",
+  
+  "WA", 
+  "SALARIES – PROFESSIONAL DIVISION", 2, 
+  "SCHEDULE 3", -2, 
+  "^\\s+\\d+$",
+  
+  "NSW", 
+  "PART B", 2, 
+  "PART C", -2, 
+  "(^\\s+- \\d+ -$)",
+  
+  "ACT", 
+  "ANNEX A – CLASSIFICATIONS AND RATES OF PAY", 1, 
+  "ANNEX B", -1, 
+  "Page\\s+\\d{1,3}\\s+of\\s+\\d{1,3}",
+  
+  "VIC",
+  "Classification\\s+FFPPOA", 0, 
+  "Allowances", -2, 
+  "",
+  
+  "SA", # Scanned & need to be extracted manually
+  NA, NA, NA, NA, NA, 
+  "TAS", # Scanned & need to be extracted manually
+  NA, NA, NA, NA, NA, 
 )
+
+MRWA_layout <- tibble::tribble(
+  ~state, 
+  ~start_pattern, ~start_offset, ~end_pattern, ~end_offset, ~skip_pattern,
+  "MRWA",
+  "ii\\)\\s+Specified Calling", 1,
+  "ii\\)\\s+Specified Callings cont\\.", 0,
+  "^\\s*\\d{1,3}\\s*$"
+)  
+
+# Combine all information about each State Award in one table
+award_info <- dplyr::left_join(sources, table_layout, by = "state")
+
+# Extract the rough salary tables.
+# These may still need human cleaning before they are useful. 
+# In particular, anything that needs OCR will need a lot of manual cleaning.
+salary_table <- list()
+for (s in pull(award_info, state)) {
+  current <- award_info %>% filter(state == s)   # All info for the state
+  
+  cat("process ", s, "\t type ", current$doc_type, "\n")
+  
+  if (current$doc_type == "html") {
+    raw_table <- table_from_html(current$award_file, current$order)
+  } else if (current$doc_type == "pdf") {
+    raw_text <- pdftools::pdf_text(current$award_file) # Text in the PDF
+    raw_table <- table_rows_from_text(raw_text, current)
+  } else if (current$doc_type == "scan.pdf") {
+    cat(current$award_file, " is a scanned PDF - need to copy data manually.\n")
+    next
+  } else {
+    cat(s, ": can't interpret files of type ", current$doc_type, ".\n")
+    next
+  }
+  # Save the extracted but still messy salary table
+#  readr::write_csv(raw_table, here::here(raw_table_folder, paste0(s, ".csv")))
+  save_raw_table(raw_table, s)
+  salary_table[[s]] <- raw_table
+}
+
+
+current <- award_info %>% filter(state == this_state) # All info for the state
+raw_text <- pdftools::pdf_text(current$award_file)
+
+tbl_layout <- filter(table_layout, state == this_state)
+
+table_rows_from_text(raw_text, tbl_layout)
+
+
+
 
 # Make a list to hold all the salary tables
 salaries <- list()
@@ -33,8 +201,8 @@ salaries <- list()
 # for OLD - HTML
 this_state <- "QLD"
 current <- sources %>% filter(state == this_state)
-struct <- table_structures %>% filter(state == current$state)
-current_salaries <- get_from_html(current$award_file, current$order)
+#struct <- table_structures %>% filter(state == current$state)
+current_salaries <- table_from_html(current$award_file, current$order)
 salaries[[this_state]] <- current_salaries
 
 # for WA - PDF
@@ -55,9 +223,9 @@ if (is.list(raw_text) & pages_read == pages) {
   # It's a text PDF, so just read the text
   # Find the page with our pattern, then split into lines
   raw_text <- raw_text %>%
-    stringr::str_subset(struct$pattern) %>% 
     stringr::str_split("\n") %>% 
-    unlist()
+    unlist() %>%
+    stringr::str_subset(struct$pattern)
 } else {
   # try by ocr
   raw_text <- pdftools::pdf_ocr_text(current$award_file, 

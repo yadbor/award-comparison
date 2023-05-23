@@ -121,3 +121,7 @@ purrr::pwalk(sources, download_safely, dest_dir=award_folder)
 if (verbose) {
   cat("done.\n")
 }
+
+# Save sources puls dest award_file names for later reuse
+# NB - this doesn't check if any files failed to download
+readr::write_csv(sources, here::here("data", "sources_and_file.csv"))
