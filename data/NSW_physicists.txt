@@ -1,0 +1,53 @@
+Classification  current  01/07/2022
+Accredited Medical Physicists
+Medical Physics Registrar
+Year 1	72,242	74,070
+Year 2	80,269	82,300
+Year 3	88,300	90,534
+Year 4	96,332	98,769
+Year 5 and thereafter  104,345	106,985
+Medical Physics Specialist
+Year 1	120,406	123,452
+Year 2	136,465	139,918
+Year 3	152,508	156,366
+Year 4	168,568	172,833
+Year 5 and thereafter  184,615	189,286
+Senior Medical Physics Specialist
+Year 1	192,646	197,520
+Year 2	200,676	205,753
+Year 3	208,706	213,986
+Year 4 and thereafter  216,734	222,217
+Principal Medical Physics Specialist
+Year 1 and thereafter  224,749	230,435
+Director Medical Physics Specialist
+Level 1	224,749	230,435
+Level 2	236,001	241,972
+Level 3	248,838	255,134
+Non-Accredited Medical Physicists
+Medical Physics Registrar
+Year 1	72,242	74,070
+Year 2	80,269	82,300
+Year 3	88,300	90,534
+Year 4	96,332	98,769
+Year 5	104,345	106,985
+Medical Physics Specialist (-10%) *
+Year 1	108,365	111,107
+Year 2	122,819	125,926
+Year 3	137,257	140,729
+Year 4	151,711	155,550
+Year 5 and thereafter  166,154	170,357
+Senior Medical Physics Specialist (-4%) #
+Year 1	184,940	189,619
+Year 2	192,649	197,523
+Year 3	200,358	205,427
+Year 4 and thereafter  208,065	213,328
+Principal Medical Physics Specialist (-3%) ^
+Year 1 and thereafter  218,007	223,522
+Director Medical Physics Specialist (-3%) ^
+Level 1	218,007	223,522
+Level 2	228,921	234,713
+Level 3 and thereafter  241,373	247,480
+Note:
+* Reduced by 10%
+# Reduced by 4%
+^ Reduced by 3%

@@ -309,3 +309,69 @@ extract_table <- function(lines, table_def) {
 }
 
 # trivial change to force commit
+
+make_columns_spec <- function(a_table) {
+  if (is.character(a_table)) {
+    # a string, so try to split into columns
+    # Get the column positions from the first few lines & use for the whole table
+    few_start <- min(10, length(a_table)) # Might be < 10 lines
+    few_end  <- min(20, length(a_table)) # Might be < 20 lines
+    col_spec <- readr::fwf_empty(I(a_table[few_start:few_end]))
+    a_table <- readr::read_fwf(I(a_table), col_positions = col_spec)
+  } 
+  return(a_table)
+}
+
+make_columns_rep <- function(a_table) {
+  if (is.character(a_table)) {
+    # a string, so try to split into columns
+    # Get the column positions from the first few lines & use for the whole table
+    a_table %>% 
+      stringr::str_replace_all("\\s{2,}", "|") %>% 
+      tibble::as_tibble_col() %>% 
+      tidyr::separate(value, 
+                      into = c("class", "frequency", "pay1", "pay2", "more"),
+                      extra = "merge",
+                      sep = "\\|")
+  } else {
+    return(a_table)
+  } 
+}
+
+# Manually extract
+
+
+QLD <- salary_table$QLD # Already a tibble, just fix up the column names
+# Names are in first row, but can't use slice() as have duplicate column names
+names(QLD) <- as.character(QLD[1, ])
+QLD <- slice(QLD, -1) # drop the first row
+VIC <- readr::read_fwf(I(salary_table$VIC[1:21])) # extra headers to trim
+WA <- readr::read_fwf(I(salary_table$WA)) # extra headers to trim
+
+nums <- str_which(salary_table$ACT, "CLASSIFICATION")[-1]
+tmp <- salary_table$ACT[-nums]
+ACT <- tmp %>% 
+  str_replace_all("\\s{2,}", "\\|") %>% 
+  str_split("\\|", simplify = TRUE) %>% 
+  as_tibble(.name_repair = "unique")
+
+tmp <-  str_subset(salary_table$NSW, "Per Week\\s+\\d", negate = TRUE)
+NSW <- tmp %>% 
+  str_replace_all("\\s{2,}", "\\|") %>% 
+  str_split("\\|", simplify = TRUE) %>% 
+  as_tibble(.name_repair = "unique")
+
+#col_pos <- readr::fwf_empty(I(tmp), 10, n = 10)
+#ACT <- readr::read_fwf(I(tmp), col_positions = col_pos)
+
+# SA & TAS done via OCR and manual intervention
+SA = readxl::read_xlsx(here::here("data", "SA_manual.xlsx"))
+TAS = readxl::read_xlsx(here::here("data", "TAS_manual.xlsx"))
+
+
+sheet_list <- list(ACT=ACT, NSW=NSW, QLD=QLD, SA=SA, TAS=TAS, VIC=VIC, WA=WA)
+
+writexl::write_xlsx(sheet_list,
+                    path = here::here("data", "awards_dirty.xlsx"),
+                    col_names = TRUE,
+                    format_headers = FALSE)

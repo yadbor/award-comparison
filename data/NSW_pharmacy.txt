@@ -1,0 +1,39 @@
+Classification	current 2022-07-01
+Graduate Pharmacist Unregistered	1,307.96	1,341.05
+Pharmacist
+Grade 1
+1st Year	1,388.61	1,423.74
+2nd Year	1,483.67	1,521.21
+3rd Year	1,586.03	1,626.16
+4th Year	1,769.26	1,814.02
+5th Year	1,826.34	1,872.55
+Grade 2
+1st Year	1,964.64	2,014.35
+2nd Year	2,030.22	2,081.58
+3rd Year	2,086.80	2,139.60
+Grade 3
+Senior Pharmacist
+Director of Pharmacy-Group 5 Hospital
+Deputy Director of Pharmacy-Group 3 Hospital
+1st Year	2,315.39	2,373.97
+2nd Year	2,379.81	2,440.02
+Grade 4
+Director of Pharmacy - Group 4 Hospital
+Deputy Director of Pharmacy - Group 2 Hospital
+1st Year	2,379.81	2,440.02
+2nd Year	2,460.54	2,522.79
+Grade 5
+Director of Pharmacy - Group 3 Hospital
+Deputy Director of Pharmacy - Group 1 Hospital
+1st Year	2,535.39	2,599.54
+2nd Year	2,599.15	2,664.91
+Grade 6
+Director of Pharmacy - Group 2 Hospital
+1st Year	2,784.63	2,855.08
+2nd Year	2,854.11	2,926.32
+Grade 7
+Director of Pharmacy - Group 1 Hospital
+Group A - 1st Year	3,000.77	3,076.69
+Group A - 2nd Year	3,073.57	3,151.33
+Group B - 1st Year	3,145.40	3,224.98
+Group B - 2nd Year	3,217.97	3,299.38
